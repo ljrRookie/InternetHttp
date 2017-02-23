@@ -1,11 +1,14 @@
 package com.example.internethttp;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.io.BufferedReader;
@@ -19,6 +22,8 @@ import java.net.URLConnection;
 import java.sql.ClientInfoStatus;
 import java.sql.Connection;
 
+import okhttp3.Call;
+import okhttp3.Callback;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -28,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText mPath;
     private Button mSend;
     private TextView mResponseText;
+    private ImageView mImg;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
         mPath = (EditText) findViewById(R.id.edt_path);
         mSend = (Button) findViewById(R.id.btn_seng);
         mResponseText = (TextView) findViewById(R.id.tv_response);
+        mImg = (ImageView) findViewById(R.id.img);
         mSend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -94,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
                         response.append(line);
                     }
                     //在主线程更新UI
-                    showResponseData(response.toString());
+                  //  showResponseData(response.toString());
                 } catch (Exception e) {
                     e.printStackTrace();
                 } finally {
@@ -142,11 +149,32 @@ public class MainActivity extends AppCompatActivity {
                     Request request = new Request.Builder()
                             .url(path)
                             .build();
-                    //调用OkHttpClient的newCall()方法来创建一个Call对象，并调用它的execute()方法来发送请求并获取服务器返回的数据
-                    Response response = client.newCall(request).execute();
-                    String responseData = response.body().string();
-                    //在主线程更新UI
-                    showResponseData(responseData);
+                    //调用OkHttpClient的newCall()方法来创建一个Call对象.
+                    Call call = client.newCall(request);
+                    //加入请求队列，并监听回调
+                    call.enqueue(new Callback() {
+
+                        ;
+
+                        @Override
+                        public void onFailure(Call call, IOException e) {
+
+                        }
+
+                        @Override
+                        public void onResponse(Call call, Response response) throws IOException {
+                            //请求网页源代码
+                          //  String responseData = response.body().string();
+
+                            //如果访问图片网址
+                            byte[] imgbytpe = response.body().bytes();
+                           final Bitmap bitmap = BitmapFactory.decodeByteArray(imgbytpe, 0, imgbytpe.length);
+                            //在主线程更新UI
+                            showResponseData(bitmap);
+                        }
+
+                    });
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -155,12 +183,13 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void showResponseData(final String responseData) {
+    private void showResponseData(final Bitmap bitmap) {
         //在主线程更新UI
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                mResponseText.setText(responseData);
+             //   mResponseText.setText(responseData);
+                mImg.setImageBitmap(bitmap);
             }
         });
     }
